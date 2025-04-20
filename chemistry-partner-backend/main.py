@@ -1,74 +1,26 @@
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import os
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import List, Optional
 from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import jwt
+from typing import List
+import shutil
+from pathlib import Path
+
 import models
 import schemas
-from database import SessionLocal, engine
+from database import get_db
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Chemistry Partner API")
-
-# CORS middleware setup
-origins = [
-    "http://localhost:3000",  # React frontend URL
-    "http://localhost:8000",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# JWT Authentication settings
-SECRET_KEY = "a_very_secure_secret_key_that_should_be_changed_in_production"
+# Add these configurations
+SECRET_KEY = "your-secret-key-here"  # Change this to a secure secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Password context for hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Helper functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(models.User).filter(models.User.username == username).first()
-    if not user or not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
+# Add these authentication functions
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,78 +32,105 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = schemas.TokenData(username=username)
-    except JWTError:
+    except jwt.JWTError:
         raise credentials_exception
-    user = db.query(models.User).filter(models.User.username == token_data.username).first()
+    
+    user = db.query(models.User).filter(models.User.username == username).first()
     if user is None:
         raise credentials_exception
     return user
 
-# API endpoints
-@app.post("/token", response_model=schemas.Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    hashed_password = get_password_hash(user.password)
-    db_user = models.User(username=user.username, email=user.email, hashed_password=hashed_password)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-@app.get("/users/me/", response_model=schemas.User)
-async def read_users_me(current_user: models.User = Depends(get_current_user)):
+async def get_current_active_user(current_user: schemas.User = Depends(get_current_user)):
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-@app.get("/papers/", response_model=List[schemas.Paper])
-def get_papers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    papers = db.query(models.Paper).offset(skip).limit(limit).all()
-    return papers
+# Create directory for PDF storage if it doesn't exist
+UPLOAD_DIR = Path("uploads/pdfs")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-@app.get("/papers/{paper_id}", response_model=schemas.Paper)
-def get_paper(paper_id: int, db: Session = Depends(get_db)):
-    db_paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
-    if db_paper is None:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    return db_paper
+app = FastAPI()
 
-@app.post("/papers/", response_model=schemas.Paper)
-def create_paper(paper: schemas.PaperCreate, db: Session = Depends(get_db),
-                current_user: models.User = Depends(get_current_user)):
-    db_paper = models.Paper(**paper.dict(), owner_id=current_user.id)
-    db.add(db_paper)
-    db.commit()
-    db.refresh(db_paper)
-    return db_paper
 
-@app.post("/submissions/", response_model=schemas.Submission)
-def create_submission(submission: schemas.SubmissionCreate, db: Session = Depends(get_db),
-                     current_user: models.User = Depends(get_current_user)):
-    # Check if paper exists
-    paper = db.query(models.Paper).filter(models.Paper.id == submission.paper_id).first()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
+@app.post("/papers/{paper_id}/upload-pdf", response_model=schemas.PaperUploadResponse)
+async def upload_pdf(
+    paper_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    # Verify admin access
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to upload papers"
+        )
     
-    db_submission = models.Submission(**submission.dict(), user_id=current_user.id)
-    db.add(db_submission)
+    # Check if paper exists
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Paper not found"
+        )
+    
+    # Validate file is PDF
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be a PDF document"
+        )
+    
+    # Create unique filename with paper_id to avoid conflicts
+    filename = f"paper_{paper_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    file_path = UPLOAD_DIR / filename
+    
+    # Save the uploaded file
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Update paper with pdf_path
+    paper.pdf_path = str(file_path)
     db.commit()
-    db.refresh(db_submission)
-    return db_submission
+    db.refresh(paper)
+    
+    return {
+        "paper_id": paper.id,
+        "title": paper.title,
+        "pdf_path": paper.pdf_path
+    }
+
+@app.get("/papers/{paper_id}/pdf")
+async def get_pdf(
+    paper_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    # Get paper
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Paper not found"
+        )
+    
+    # Check if PDF exists
+    if not paper.pdf_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF not found for this paper"
+        )
+    
+    pdf_path = Path(paper.pdf_path)
+    if not pdf_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF file not found on server"
+        )
+    
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=f"paper_{paper_id}.pdf"
+    )
+

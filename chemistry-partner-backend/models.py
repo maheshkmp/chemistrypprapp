@@ -1,43 +1,51 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Text, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from database import Base
-import datetime
 
 class User(Base):
     __tablename__ = "users"
-
+    
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
+    username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-
-    papers = relationship("Paper", back_populates="owner")
+    is_admin = Column(Boolean, default=False)
+    
     submissions = relationship("Submission", back_populates="user")
 
 class Paper(Base):
     __tablename__ = "papers"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(Text)
-    content = Column(Text)
-    price = Column(Float)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-
-    owner = relationship("User", back_populates="papers")
+    duration_minutes = Column(Integer)
+    total_marks = Column(Integer)
+    pdf_path = Column(String, nullable=True)  # Path to stored PDF file
+    
     submissions = relationship("Submission", back_populates="paper")
+    questions = relationship("Question", back_populates="paper")
+
+class Question(Base):
+    __tablename__ = "questions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id"))
+    question_text = Column(Text)
+    answer = Column(String)
+    marks = Column(Integer)
+    
+    paper = relationship("Paper", back_populates="questions")
 
 class Submission(Base):
     __tablename__ = "submissions"
-
+    
     id = Column(Integer, primary_key=True, index=True)
-    score = Column(Float)
-    answers = Column(Text)
-    submitted_at = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
     paper_id = Column(Integer, ForeignKey("papers.id"))
-
+    score = Column(Integer)
+    completed_at = Column(String)  # Store as ISO format datetime string
+    
     user = relationship("User", back_populates="submissions")
     paper = relationship("Paper", back_populates="submissions")

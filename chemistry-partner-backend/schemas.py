@@ -1,19 +1,16 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
-
-# Token schemas
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 class TokenData(BaseModel):
     username: Optional[str] = None
 
-# User schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 class UserBase(BaseModel):
+    email: str
     username: str
-    email: EmailStr
 
 class UserCreate(UserBase):
     password: str
@@ -21,41 +18,65 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_active: bool
+    is_admin: bool
 
     class Config:
         orm_mode = True
 
-# Paper schemas
+class QuestionBase(BaseModel):
+    question_text: str
+    answer: str
+    marks: int
+
+class QuestionCreate(QuestionBase):
+    pass
+
+class Question(QuestionBase):
+    id: int
+    paper_id: int
+
+    class Config:
+        orm_mode = True
+
 class PaperBase(BaseModel):
     title: str
-    description: Optional[str] = None
-    content: str
-    price: float
+    description: str
+    duration_minutes: int
+    total_marks: int
 
 class PaperCreate(PaperBase):
     pass
 
+class PaperUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    total_marks: Optional[int] = None
+
 class Paper(PaperBase):
     id: int
-    created_at: datetime
-    owner_id: int
+    pdf_path: Optional[str] = None
+    questions: List[Question] = []
 
     class Config:
         orm_mode = True
 
-# Submission schemas
 class SubmissionBase(BaseModel):
-    score: float
-    answers: Optional[str] = None
     paper_id: int
+    score: int
+    completed_at: str
 
 class SubmissionCreate(SubmissionBase):
     pass
 
 class Submission(SubmissionBase):
     id: int
-    submitted_at: datetime
     user_id: int
 
     class Config:
         orm_mode = True
+
+class PaperUploadResponse(BaseModel):
+    paper_id: int
+    title: str
+    pdf_path: str
