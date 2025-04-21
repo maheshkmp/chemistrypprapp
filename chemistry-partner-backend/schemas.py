@@ -21,7 +21,7 @@ class User(UserBase):
     is_admin: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Changed from orm_mode = True
 
 class QuestionBase(BaseModel):
     question_text: str
@@ -36,7 +36,7 @@ class Question(QuestionBase):
     paper_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Changed from orm_mode = True
 
 class PaperBase(BaseModel):
     title: str
@@ -59,7 +59,7 @@ class Paper(PaperBase):
     questions: List[Question] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Changed from orm_mode = True
 
 class SubmissionBase(BaseModel):
     paper_id: int
@@ -74,7 +74,7 @@ class Submission(SubmissionBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Changed from orm_mode = True
 
 class PaperUploadResponse(BaseModel):
     paper_id: int
