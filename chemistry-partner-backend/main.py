@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 models.Base.metadata.create_all(bind=engine)
 
 # Add these configurations
-SECRET_KEY = "your-secret-key-here"  # Change this to a secure secret key
+SECRET_KEY = "123"  # Change this to a secure secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -143,7 +143,7 @@ async def get_pdf(
     )
 
 # Add these configurations
-SECRET_KEY = "your-secret-key-here"  # Change this to a secure secret key
+SECRET_KEY = "123"  # Change this to a secure secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
