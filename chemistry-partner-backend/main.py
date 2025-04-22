@@ -18,7 +18,8 @@ from database import engine
 import models
 from fastapi.middleware.cors import CORSMiddleware
 
-# Create database tables
+# Drop all tables and recreate them
+models.Base.metadata.drop_all(bind=engine)
 models.Base.metadata.create_all(bind=engine)
 
 # Add these configurations
@@ -283,21 +284,26 @@ def create_access_token(data: dict):
 # Add these endpoints
 @app.post("/register", response_model=schemas.User)
 async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_password = get_password_hash(user.password)
-    db_user = models.User(
-        email=user.email,
-        username=user.username,
-        hashed_password=hashed_password,
-        is_admin=False  # Set to True for admin users
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        db_user = db.query(models.User).filter(models.User.email == user.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        hashed_password = get_password_hash(user.password)
+        db_user = models.User(
+            email=user.email,
+            username=user.username,
+            hashed_password=hashed_password,
+            is_active=True,  # Add this line
+            is_admin=False
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except Exception as e:
+        print(f"Registration error: {str(e)}")  # This will log the error
+        raise
 
 @app.post("/token", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -362,4 +368,19 @@ async def get_paper(
     if paper is None:
         raise HTTPException(status_code=404, detail="Paper not found")
     return paper
+
+# Add after your other endpoints
+@app.put("/users/{user_id}/admin", response_model=schemas.User)
+async def set_admin_status(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_admin = True
+    db.commit()
+    db.refresh(user)
+    return user
 

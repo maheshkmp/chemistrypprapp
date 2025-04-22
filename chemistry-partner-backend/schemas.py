@@ -1,15 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Optional
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+from typing import Optional, List
 
 class UserBase(BaseModel):
-    email: str
+    email: str  # Changed from EmailStr to str
     username: str
 
 class UserCreate(UserBase):
@@ -21,7 +14,14 @@ class User(UserBase):
     is_admin: bool
 
     class Config:
-        from_attributes = True  # Changed from orm_mode = True
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
 
 class QuestionBase(BaseModel):
     question_text: str
