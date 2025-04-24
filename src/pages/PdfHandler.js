@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import './PdfHandler.css';  // Add this line
 
 const PdfHandler = ({ isAdmin }) => {
   const { paperId } = useParams();
@@ -32,17 +33,27 @@ const PdfHandler = ({ isAdmin }) => {
     try {
       setUploadStatus('Uploading...');
       
+      // Get token and verify it exists
       const token = localStorage.getItem('accessToken');
-      await axios.post(`http://localhost:8000/papers/${paperId}/upload-pdf`, 
+      console.log('Token:', token); // Debug token
+      
+      if (!token) {
+        setError('Not authenticated. Please login first.');
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:8000/papers/${paperId}/upload-pdf`, 
         formData,
         { 
           headers: { 
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          },
+          withCredentials: true
         }
       );
       
+      console.log('Upload response:', response); // Debug response
       setUploadStatus('Upload successful!');
       setFile(null);
     } catch (err) {

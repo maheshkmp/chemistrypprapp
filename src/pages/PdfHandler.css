@@ -1,0 +1,30 @@
+.pdf-handler {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.pdf-viewer {
+  margin: 20px 0;
+}
+
+.pdf-uploader {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.error-message {
+  color: red;
+  margin: 10px 0;
+}
+
+.status-message {
+  color: green;
+  margin: 10px 0;
+}
+
+.form-group {
+  margin: 15px 0;
+}

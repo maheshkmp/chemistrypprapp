@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const PaperList = () => {
+  const navigate = useNavigate();
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,19 +13,21 @@ const PaperList = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // Get user info to check if admin
         const token = localStorage.getItem('accessToken');
-        if (token) {
-          const userResponse = await axios.get('http://localhost:8000/users/me', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          setUser(userResponse.data);
+        const isAdminUser = localStorage.getItem('isAdmin') === 'true';
+        
+        if (!token) {
+          navigate('/login');
+          return;
         }
         
-        // Get papers list
+        setUser({ is_admin: isAdminUser });
+        
         const papersResponse = await axios.get('http://localhost:8000/papers', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
         });
         
         setPapers(papersResponse.data);
@@ -37,10 +40,42 @@ const PaperList = () => {
     };
 
     fetchData();
-  }, []);
+  }, [navigate]);
+
+  const handleCreatePaper = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.post('http://localhost:8000/papers/', 
+        {
+          title: "New Paper",
+          description: "Paper description",
+          duration_minutes: 60,
+          total_marks: 100
+        },
+        {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      navigate(`/papers/${response.data.id}/manage`);
+    } catch (error) {
+      console.error('Error creating paper:', error);
+      setError('Failed to create paper. Please try again.');
+    }
+  };
 
   if (loading) return <div className="loading">Loading papers...</div>;
   if (error) return <div className="error-message">{error}</div>;
+
+  // Remove the second handleCreatePaper function that was here
 
   return (
     <div className="paper-list">
@@ -62,7 +97,7 @@ const PaperList = () => {
               <div className="paper-actions">
                 {paper.pdf_path && (
                   <a 
-                    href={`http://localhost:8000/papers/${paper.id}/pdf`}
+                    href={`http://localhost:8000/papers/${paper.id}/pdf?token=${localStorage.getItem('accessToken')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary"
@@ -86,9 +121,9 @@ const PaperList = () => {
       
       {user?.is_admin && (
         <div className="admin-actions">
-          <Link to="/papers/create" className="btn btn-success">
+          <button onClick={handleCreatePaper} className="btn btn-primary">
             Create New Paper
-          </Link>
+          </button>
         </div>
       )}
     </div>

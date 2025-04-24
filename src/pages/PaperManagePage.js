@@ -21,18 +21,10 @@ const PaperManagePage = () => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        // Check if user is admin
-        const userResponse = await axios.get('http://localhost:8000/users/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const isAdminUser = localStorage.getItem('isAdmin') === 'true';
         
-        if (!userResponse.data.is_admin) {
-          navigate('/papers');
+        if (!token || !isAdminUser) {
+          navigate('/login');
           return;
         }
         
@@ -159,6 +151,7 @@ const PaperManagePage = () => {
       </div>
       
       <div className="pdf-section">
+        <h2>PDF Management</h2>
         <PdfHandler isAdmin={isAdmin} />
       </div>
       
