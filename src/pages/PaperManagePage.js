@@ -66,10 +66,23 @@ const PaperManagePage = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.put(
+      
+      // Convert numeric strings to integers
+      const updatedData = {
+        ...formData,
+        duration_minutes: parseInt(formData.duration_minutes),
+        total_marks: parseInt(formData.total_marks)
+      };
+
+      await axios.put(  // Changed back to PUT since PATCH didn't work
         `http://localhost:8000/papers/${paperId}`,
-        formData,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        updatedData,
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
       alert('Paper updated successfully');
