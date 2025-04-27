@@ -1,0 +1,27 @@
+.paper-view {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.paper-details {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.error-message {
+  color: #dc3545;
+  padding: 15px;
+  margin: 20px 0;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}

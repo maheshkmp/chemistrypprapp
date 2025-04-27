@@ -1,0 +1,31 @@
+.paper-viewer {
+  width: 100%;
+  margin: 20px 0;
+}
+
+.pdf-container {
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pdf-container object {
+  border: none;
+  background: white;
+}
+
+.view-button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.view-button:hover {
+  background: #0056b3;
+}
