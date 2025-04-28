@@ -1,0 +1,65 @@
+.timed-paper {
+  height: calc(100vh - 100px);
+  padding: 20px;
+}
+
+.paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.timer {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.show-paper-btn {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.show-paper-btn:hover {
+  background: #0056b3;
+}
+
+.end-paper-btn {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.end-paper-btn:hover {
+  background: #c82333;
+}
+
+.pdf-viewer {
+  width: 100%;
+  height: calc(100% - 60px);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.error-message {
+  color: #dc3545;
+  padding: 15px;
+  margin: 20px 0;
+  background: #f8d7da;
+  border-radius: 4px;
+}

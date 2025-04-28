@@ -14,26 +14,31 @@ import FinalizePaper from './pages/FinalizePaper';
 import AnswerCheck from './pages/AnswerCheck';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import PaperManagePage from './pages/PaperManagePage'; // New component
+import PaperManagePage from './pages/PaperManagePage';
 
 function App() {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+
   return (
     <Router>
       <div className="app">
         <Header />
-        <main className="main-content">
+        <div className="content">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/papers" element={<PaperList />} />
+            <Route 
+              path="/papers" 
+              element={isAuthenticated ? <PaperList /> : <Navigate to="/login" />} 
+            />
             <Route path="/papers/:paperId" element={<TimedPaper />} />
-            <Route path="/papers/:paperId/manage" element={<PaperManagePage />} /> {/* New route */}
+            <Route path="/papers/:paperId/manage" element={<PaperManagePage />} />
             <Route path="/papers/:paperId/finalize" element={<FinalizePaper />} />
             <Route path="/papers/:paperId/check" element={<AnswerCheck />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </main>
+        </div>
         <Footer />
       </div>
     </Router>

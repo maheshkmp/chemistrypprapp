@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -24,13 +25,11 @@ const Login = () => {
         }
       );
       
-      // Store token and basic user info
-      localStorage.setItem('accessToken', response.data.access_token);
+      localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('username', username);
-      localStorage.setItem('isAdmin', 'true');
       localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('isAdmin', response.data.is_admin);
       
-      console.log('Login successful:', response.data);
       navigate('/papers');
     } catch (err) {
       setError('Login failed. Please check your credentials.');
@@ -49,6 +48,7 @@ const Login = () => {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            required
           />
         </div>
         <div className="form-group">
@@ -57,6 +57,7 @@ const Login = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
         </div>
         <button type="submit">Login</button>
