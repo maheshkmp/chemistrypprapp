@@ -56,6 +56,9 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 # Keep authentication functions together
+# Update the jwt import
+from jwt.exceptions import PyJWTError
+
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,7 +70,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except jwt.JWTError:
+    except PyJWTError:  # Changed from JWTError to PyJWTError
         raise credentials_exception
     
     user = db.query(models.User).filter(models.User.username == username).first()
@@ -202,7 +205,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         )
     
     access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "is_admin": user.is_admin,
+        "username": user.username
+    }
 
 
 @app.post("/papers/", response_model=schemas.Paper)
@@ -225,13 +233,17 @@ async def create_paper(
 
 @app.get("/papers/", response_model=List[schemas.Paper])
 async def get_papers(
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    papers = db.query(models.Paper).offset(skip).limit(limit).all()
-    return papers
+    try:
+        papers = db.query(models.Paper).all()
+        return papers
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch papers"
+        )
 
 @app.get("/papers/{paper_id}", response_model=schemas.Paper)
 async def get_paper(
@@ -256,6 +268,21 @@ async def set_admin_status(
     user.is_admin = True
     db.commit()
     db.refresh(user)
+    return user
+
+@app.get("/users/me", response_model=schemas.User)
+async def get_current_user_info(current_user: schemas.User = Depends(get_current_active_user)):
+    return current_user
+
+@app.get("/users/{username}", response_model=schemas.User)
+async def get_user_by_username(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
