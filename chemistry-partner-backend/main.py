@@ -14,6 +14,7 @@ import schemas
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
 # Single instance of FastAPI
 app = FastAPI()
@@ -244,6 +245,31 @@ async def get_papers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch papers"
         )
+
+@app.post("/papers/{paper_id}/submit", response_model=schemas.PaperSubmission)
+async def submit_paper(
+    paper_id: int,
+    submission: schemas.PaperSubmissionCreate,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    
+    paper_submission = models.PaperSubmission(
+        paper_id=paper_id,
+        user_id=current_user.id,
+        time_spent=submission.time_spent,
+        marks=submission.marks,
+        submitted_at=datetime.utcnow()
+    )
+    
+    db.add(paper_submission)
+    db.commit()
+    db.refresh(paper_submission)
+    return paper_submission
+
 
 @app.get("/papers/{paper_id}", response_model=schemas.Paper)
 async def get_paper(

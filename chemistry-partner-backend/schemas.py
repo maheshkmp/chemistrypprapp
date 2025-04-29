@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from datetime import datetime
 
 class UserBase(BaseModel):
     email: str  # Changed from EmailStr to str
@@ -80,3 +81,20 @@ class PaperUploadResponse(BaseModel):
     paper_id: int
     title: str
     pdf_path: str
+
+
+class PaperSubmissionBase(BaseModel):
+    time_spent: int
+    marks: int
+
+class PaperSubmissionCreate(PaperSubmissionBase):
+    pass
+
+class PaperSubmission(PaperSubmissionBase):
+    id: int
+    paper_id: int
+    user_id: int
+    submitted_at: datetime
+
+    class Config:
+        orm_mode = True

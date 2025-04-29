@@ -1,5 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.sql import func
 from database import Base
 
 class User(Base):
@@ -49,3 +51,13 @@ class Submission(Base):
     
     user = relationship("User", back_populates="submissions")
     paper = relationship("Paper", back_populates="submissions")
+
+class PaperSubmission(Base):
+    __tablename__ = "paper_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    time_spent = Column(Integer)  # Time spent in seconds
+    marks = Column(Integer)
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
