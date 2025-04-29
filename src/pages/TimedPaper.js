@@ -71,29 +71,53 @@ const TimedPaper = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [marks, setMarks] = useState('');
+  const [timeSpent, setTimeSpent] = useState(0);
+
   const handleEndPaper = () => {
     setShowPaper(false);
     setTimerActive(false);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
+    setTimeSpent(7200 - time); // Calculate time spent
+    setIsSubmitting(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await axios.post(
+        `http://localhost:8000/papers/${paperId}/submit`,
+        {
+          time_spent: timeSpent,
+          marks: parseInt(marks)
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      navigate('/papers');
+    } catch (err) {
+      setError('Failed to submit paper');
     }
-    navigate('/papers');
   };
 
   return (
     <div className="timed-paper">
       <div className="paper-header">
         <div className="timer">{formatTime(time)}</div>
-        {!showPaper ? (
+        {!showPaper && !isSubmitting && (
           <button onClick={handleShowPaper} className="show-paper-btn">
             Show Paper
           </button>
-        ) : (
+        )}
+        {showPaper && !isSubmitting && (
           <button onClick={handleEndPaper} className="end-paper-btn">
             End Paper
           </button>
         )}
       </div>
+      
       {showPaper && (
         <div className="pdf-viewer">
           <embed
@@ -102,6 +126,27 @@ const TimedPaper = () => {
             width="100%"
             height="100%"
           />
+        </div>
+      )}
+
+      {isSubmitting && (
+        <div className="submission-form">
+          <h2>Submit Paper</h2>
+          <p>Time Spent: {formatTime(timeSpent)}</p>
+          <div className="form-group">
+            <label>Marks:</label>
+            <input
+              type="number"
+              value={marks}
+              onChange={(e) => setMarks(e.target.value)}
+              min="0"
+              max="100"
+              required
+            />
+          </div>
+          <button onClick={handleSubmit} className="submit-btn">
+            Submit Paper
+          </button>
         </div>
       )}
     </div>
