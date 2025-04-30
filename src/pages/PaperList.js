@@ -49,9 +49,17 @@ const PaperList = () => {
     <div className="paper-list">
       <div className="paper-list-header">
         <h1>Available Papers</h1>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
+        <div className="header-buttons">
+          <button 
+            className="profile-btn"
+            onClick={() => navigate('/profile')}
+          >
+            My Profile
+          </button>
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
       </div>
       <div className="papers-grid">
         {papers.map(paper => (

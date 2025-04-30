@@ -107,11 +107,20 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      {/* Profile header section */}
       <div className="profile-header">
         <h1>Profile: {userData?.username}</h1>
-        <button onClick={handleLogout} className="logout-btn">Logout</button>
+        <div className="header-buttons">
+          <button onClick={() => navigate('/papers')} className="papers-btn">
+            Back to Papers
+          </button>
+          <button onClick={handleLogout} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </div>
 
+      {/* Analytics section */}
       <div className="analytics-section">
         <h2>Performance Analytics</h2>
         <div className="analytics-grid">

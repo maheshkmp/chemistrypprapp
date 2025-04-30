@@ -52,6 +52,26 @@
   margin-bottom: 20px;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.profile-btn {
+  padding: 8px 16px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.profile-btn:hover {
+  background-color: #357abd;
+}
+
 .logout-button {
   padding: 8px 16px;
   background-color: #dc3545;
