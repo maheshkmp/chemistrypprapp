@@ -9,32 +9,11 @@ const TimedPaper = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPaper, setShowPaper] = useState(false);
-  const [time, setTime] = useState(7200); // 2 hours in seconds
+  const [time, setTime] = useState(7200);
   const [timerActive, setTimerActive] = useState(false);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
-  const [userData, setUserData] = useState(null);
-
-  // Add this to your existing useEffect or create a new one
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get('http://localhost:8000/users/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        setUserData(response.data);
-      } catch (err) {
-        console.error('Failed to fetch user data:', err);
-      }
-    };
-  
-    if (token) {
-      fetchUserData();
-    }
-  }, [token]);
   useEffect(() => {
     let interval;
     if (timerActive && time > 0) {
@@ -96,11 +75,15 @@ const TimedPaper = () => {
           }
         }
       );
-      navigate('/papers');
+      navigate('/profile'); // Changed from /papers to /profile
     } catch (err) {
       setError('Failed to submit paper');
     }
   };
+
+  // Add loading and error displays
+  if (loading) return <div className="loading">Loading paper...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="timed-paper">

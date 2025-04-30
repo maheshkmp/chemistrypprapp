@@ -15,6 +15,7 @@ import AnswerCheck from './pages/AnswerCheck';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PaperManagePage from './pages/PaperManagePage';
+import Profile from './pages/Profile';
 
 function App() {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -37,6 +38,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
         <Footer />
