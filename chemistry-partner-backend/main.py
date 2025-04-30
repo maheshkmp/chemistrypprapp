@@ -15,6 +15,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+import bcrypt
 
 # Single instance of FastAPI
 app = FastAPI()
@@ -33,7 +34,19 @@ SECRET_KEY = "123"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Update the pwd_context configuration
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12
+)
+
+# Update the password hashing function
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 # Single instance of PDF directory
 UPLOAD_DIR = Path("uploads/pdfs")
@@ -310,6 +323,17 @@ async def get_user_by_username(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@app.get("/papers/submissions/user", response_model=List[schemas.PaperSubmission])
+async def get_user_submissions(
+    current_user: schemas.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    submissions = db.query(models.PaperSubmission)\
+        .filter(models.PaperSubmission.user_id == current_user.id)\
+        .order_by(models.PaperSubmission.submitted_at)\
+        .all()
+    return submissions
 
 
 
