@@ -11,6 +11,11 @@ const TimedPaper = () => {
   const [showPaper, setShowPaper] = useState(false);
   const [time, setTime] = useState(7200);
   const [timerActive, setTimerActive] = useState(false);
+  const [paperName, setPaperName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [marks, setMarks] = useState('');
+  const [timeSpent, setTimeSpent] = useState(0);
+  const [submitError, setSubmitError] = useState('');
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
@@ -27,6 +32,13 @@ const TimedPaper = () => {
   const handleShowPaper = async () => {
     setLoading(true);
     try {
+      const paperDetails = await axios.get(`http://localhost:8000/papers/${paperId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setPaperName(paperDetails.data.name || 'Paper');
+  
       const response = await axios.get(`http://localhost:8000/papers/${paperId}/pdf`, {
         params: { token },
         responseType: 'blob'
@@ -50,18 +62,19 @@ const TimedPaper = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [marks, setMarks] = useState('');
-  const [timeSpent, setTimeSpent] = useState(0);
-
   const handleEndPaper = () => {
     setShowPaper(false);
     setTimerActive(false);
-    setTimeSpent(7200 - time); // Calculate time spent
+    setTimeSpent(7200 - time);
     setIsSubmitting(true);
   };
 
   const handleSubmit = async () => {
+    if (!marks || marks === '') {
+      setSubmitError('Please enter your marks before submitting');
+      return;
+    }
+
     try {
       await axios.post(
         `http://localhost:8000/papers/${paperId}/submit`,
@@ -75,13 +88,12 @@ const TimedPaper = () => {
           }
         }
       );
-      navigate('/profile'); // Changed from /papers to /profile
+      navigate('/profile');
     } catch (err) {
-      setError('Failed to submit paper');
+      setSubmitError('Failed to submit paper');
     }
   };
 
-  // Add loading and error displays
   if (loading) return <div className="loading">Loading paper...</div>;
   if (error) return <div className="error-message">{error}</div>;
 
@@ -112,16 +124,23 @@ const TimedPaper = () => {
         </div>
       )}
 
+      {/* Submission form section */}
       {isSubmitting && (
         <div className="submission-form">
-          <h2>Submit Paper</h2>
-          <p>Time Spent: {formatTime(timeSpent)}</p>
+          <h2>{paperName} Submission</h2>
+          <div className="time-spent">
+            Time Spent: <span>{formatTime(timeSpent)}</span>
+          </div>
+          {submitError && <div className="error-message">{submitError}</div>}
           <div className="form-group">
             <label>Marks:</label>
             <input
               type="number"
               value={marks}
-              onChange={(e) => setMarks(e.target.value)}
+              onChange={(e) => {
+                setMarks(e.target.value);
+                setSubmitError('');
+              }}
               min="0"
               max="100"
               required
