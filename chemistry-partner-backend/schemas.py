@@ -49,8 +49,10 @@ class PaperCreate(PaperBase):
     pass
 
 class PaperUpdate(BaseModel):
+    name: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
+    # Add any other fields that should be updatable
     duration_minutes: Optional[int] = None
     total_marks: Optional[int] = None
 

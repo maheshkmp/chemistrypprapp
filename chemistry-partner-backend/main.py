@@ -245,6 +245,30 @@ async def create_paper(
     db.refresh(db_paper)
     return db_paper
 
+@app.put("/papers/{paper_id}", response_model=schemas.Paper)
+async def update_paper(
+    paper_id: int,
+    paper_update: schemas.PaperUpdate,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update papers"
+        )
+    
+    db_paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not db_paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    
+    for key, value in paper_update.dict(exclude_unset=True).items():
+        setattr(db_paper, key, value)
+    
+    db.commit()
+    db.refresh(db_paper)
+    return db_paper
+
 @app.get("/papers/", response_model=List[schemas.Paper])
 async def get_papers(
     db: Session = Depends(get_db),
@@ -334,6 +358,35 @@ async def get_user_submissions(
         .order_by(models.PaperSubmission.submitted_at)\
         .all()
     return submissions
+
+
+@app.delete("/papers/{paper_id}")
+async def delete_paper(
+    paper_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete papers"
+        )
+    
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    
+    # Delete associated PDF file if it exists
+    if paper.pdf_path:
+        pdf_path = Path(paper.pdf_path)
+        if pdf_path.exists():
+            pdf_path.unlink()
+    
+    # Delete paper from database
+    db.delete(paper)
+    db.commit()
+    
+    return {"message": "Paper deleted successfully"}
 
 
 
