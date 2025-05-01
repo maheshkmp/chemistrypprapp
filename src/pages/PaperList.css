@@ -76,11 +76,79 @@
   padding: 8px 16px;
   background-color: #dc3545;
   color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.paper-title {
+  color: #666;
+  margin: 5px 0;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+.create-btn {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.logout-button:hover {
-  background-color: #c82333;
+.create-btn:hover {
+  background-color: #218838;
+}
+
+.edit-btn {
+  background-color: #ffc107;
+  color: #000;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.edit-btn:hover {
+  background-color: #e0a800;
+}
+
+.paper-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.paper-item {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+}
+
+.paper-item p {
+  color: #666;
+  margin: 10px 0;
 }

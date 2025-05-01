@@ -206,3 +206,13 @@
   margin-top: 5px;
   padding: 5px 0;
 }
+
+.delete-paper-btn {
+  background-color: #dc3545;
+  color: white;
+  margin-left: 10px;
+}
+
+.delete-paper-btn:hover {
+  background-color: #c82333;
+}

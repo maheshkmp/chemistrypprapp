@@ -94,6 +94,8 @@ const TimedPaper = () => {
     }
   };
 
+  // Remove handleDeletePaper function since it's not being used
+  
   if (loading) return <div className="loading">Loading paper...</div>;
   if (error) return <div className="error-message">{error}</div>;
 
