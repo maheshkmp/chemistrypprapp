@@ -1,21 +1,25 @@
+# Remove duplicate imports
 import os
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import jwt
+from jwt.exceptions import PyJWTError
 from typing import List
 import shutil
 from pathlib import Path
 from database import create_tables, get_db, engine
 import models
 import schemas
-from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
 import bcrypt
+from fastapi import Request
+from fastapi.security import APIKeyHeader
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 # Single instance of FastAPI
 app = FastAPI()
@@ -49,6 +53,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Single instance of PDF directory
+# Define upload directory
 UPLOAD_DIR = Path("uploads/pdfs")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -56,11 +61,11 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 create_tables()
 
 # Keep all your helper functions together
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
+# Remove duplicate function definitions
+# Remove the second definition of:
+# - verify_password
+# - get_password_hash
+# - datetime import
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -121,10 +126,21 @@ async def upload_pdf(
         )
     
     # Validate file is PDF
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be a PDF document"
+        )
+    
+    # Validate file size (e.g., 10MB max)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    file.file.seek(0, 2)  # Move to end of file
+    file_size = file.file.tell()
+    file.file.seek(0)  # Reset file pointer
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds 10MB limit"
         )
     
     # Create unique filename with paper_id to avoid conflicts
@@ -146,8 +162,12 @@ async def upload_pdf(
         "pdf_path": paper.pdf_path
     }
 
+limiter = Limiter(key_func=get_remote_address)
+
 @app.get("/papers/{paper_id}/pdf")
+@limiter.limit("5/minute")  # 5 requests per minute
 async def get_pdf(
+    request: Request,
     paper_id: int,
     token: str,
     db: Session = Depends(get_db)
@@ -228,8 +248,23 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 
 
 @app.post("/papers/", response_model=schemas.Paper)
+# Move validate_pdf_file before all route handlers
+async def validate_pdf_file(file: UploadFile) -> bool:
+    # Check file extension
+    if not file.filename.lower().endswith('.pdf'):
+        return False
+    
+    # Read first few bytes to verify PDF signature
+    content = await file.read(5)
+    await file.seek(0)  # Reset file pointer
+    return content.startswith(b'%PDF-')
+
 async def create_paper(
-    paper: schemas.PaperCreate,
+    title: str = Form(...),
+    description: str = Form(...),
+    duration_minutes: int = Form(...),
+    total_marks: int = Form(...),
+    pdf_file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
@@ -239,16 +274,53 @@ async def create_paper(
             detail="Not authorized to create papers"
         )
     
-    db_paper = models.Paper(**paper.dict())
+    # Create paper in database
+    paper_data = {
+        "title": title,
+        "description": description,
+        "duration_minutes": duration_minutes,
+        "total_marks": total_marks
+    }
+    db_paper = models.Paper(**paper_data)
     db.add(db_paper)
     db.commit()
     db.refresh(db_paper)
+
+    # Handle PDF upload if provided
+    if pdf_file:
+        if not await validate_pdf_file(pdf_file):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid PDF file format"
+            )
+        
+        try:
+            filename = f"paper_{db_paper.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            file_path = UPLOAD_DIR / filename
+            
+            with file_path.open("wb") as buffer:
+                content = await pdf_file.read()
+                buffer.write(content)
+            
+            db_paper.pdf_path = str(file_path)
+            db.commit()
+            db.refresh(db_paper)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to save PDF file"
+            )
+    
     return db_paper
 
 @app.put("/papers/{paper_id}", response_model=schemas.Paper)
 async def update_paper(
     paper_id: int,
-    paper_update: schemas.PaperUpdate,
+    title: str = Form(...),
+    description: str = Form(...),
+    duration_minutes: int = Form(...),
+    total_marks: int = Form(...),
+    pdf_file: UploadFile = File(None),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
@@ -258,16 +330,37 @@ async def update_paper(
             detail="Not authorized to update papers"
         )
     
-    db_paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
-    if not db_paper:
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
-    for key, value in paper_update.dict(exclude_unset=True).items():
-        setattr(db_paper, key, value)
+    # Update paper details
+    paper.title = title
+    paper.description = description
+    paper.duration_minutes = duration_minutes
+    paper.total_marks = total_marks
+
+    # Handle PDF upload if provided
+    if pdf_file:
+        # Delete old PDF if exists
+        if paper.pdf_path:
+            old_path = Path(paper.pdf_path)
+            if old_path.exists():
+                old_path.unlink()
+        
+        # Save new PDF
+        filename = f"paper_{paper_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        file_path = UPLOAD_DIR / filename
+        
+        with file_path.open("wb") as buffer:
+            content = await pdf_file.read()
+            buffer.write(content)
+        
+        paper.pdf_path = str(file_path)
     
     db.commit()
-    db.refresh(db_paper)
-    return db_paper
+    db.refresh(paper)
+    return paper
 
 @app.get("/papers/", response_model=List[schemas.Paper])
 async def get_papers(
