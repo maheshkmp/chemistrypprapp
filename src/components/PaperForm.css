@@ -1,10 +1,92 @@
 .paper-form {
+  position: relative;
   max-width: 600px;
   margin: 20px auto;
   padding: 20px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #ff4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #ff0000;
+}
+
+.paper-form {
+  position: relative;
+  width: 100%;
+  padding: 20px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: #ff4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #ff0000;
+}
+
+.paper-form {
+  position: relative;
+  padding-top: 20px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #666;
+  transition: all 0.2s ease;
+  z-index: 1001;
+}
+
+.close-btn:hover {
+  background: #e0e0e0;
+  color: #333;
 }
 
 .form-group {
@@ -19,31 +101,54 @@
 
 .form-group input,
 .form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  .file-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    margin-top: 5px;
+  }
+  
+  .file-input::-webkit-file-upload-button {
+    background: #4a90e2;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
 }
 
 .form-group textarea {
   min-height: 100px;
 }
 
-.submit-btn {
-  background-color: #4a90e2;
-  color: white;
-  padding: 10px 20px;
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.submit-btn, .cancel-btn {
+  padding: 12px 24px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  width: 100%;
+  font-size: 16px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
 }
 
 .submit-btn:hover {
   background-color: #357abd;
-}
-
-.error-message {
-  color: #dc3545;
-  margin-bottom: 15px;
 }

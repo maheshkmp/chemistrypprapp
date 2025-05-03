@@ -63,10 +63,13 @@ const PaperList = () => {
     }
   }, [token, navigate, fetchPapers]); // Add fetchPapers to dependency array
 
-  const handleCreatePaper = async (paperData) => {
+  const handleCreatePaper = async (formData) => {
     try {
-      await axios.post('http://localhost:8000/papers/', paperData, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      await axios.post('http://localhost:8000/papers/', formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setShowForm(false);
       fetchPapers();
@@ -75,10 +78,13 @@ const PaperList = () => {
     }
   };
 
-  const handleUpdatePaper = async (paperData) => {
+  const handleUpdatePaper = async (formData) => {
     try {
-      await axios.put(`http://localhost:8000/papers/${editingPaper.id}`, paperData, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      await axios.put(`http://localhost:8000/papers/${editingPaper.id}`, formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setEditingPaper(null);
       fetchPapers();
@@ -123,6 +129,7 @@ const PaperList = () => {
       {showForm && (
         <PaperForm 
           onSubmit={handleCreatePaper}
+          onCancel={() => setShowForm(false)}
           mode="create"
         />
       )}
@@ -131,6 +138,7 @@ const PaperList = () => {
         <PaperForm 
           paper={editingPaper}
           onSubmit={handleUpdatePaper}
+          onCancel={() => setEditingPaper(null)}
           mode="edit"
         />
       )}
